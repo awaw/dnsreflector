@@ -1,0 +1,71 @@
+dnsreflector 1.01 (2003-Apr-27)
+===============================
+
+The dnsreflector daemon listens for DNS queries on a local UDP port and
+answers with records pointing back to localhost. Combined with pf(4) this
+works as a bandwidth efficient spamtrap.
+
+This program was written and tested with OpenBSD. If you are interested
+in running dnsreflector on another platform, please contact me.
+
+
+Installation
+============
+
+make
+make install
+
+
+PF Setup
+========
+
+table <spamd> persist
+rdr inet proto udp from <spamd> to any port 53 -> 127.0.0.1 port 53000
+
+
+Usage
+=====
+
+dnsreflector [-d] [-a address] [-p port]
+
+-d           Run as daemon in the background
+-a address   Bind to this address (default: 127.0.0.1)
+-p port      Bind to this port (default: 53000)
+
+
+Homepage
+========
+
+You can always find the latest version of dnsreflector at:
+
+    http://www.wolfermann.org/dnsreflector.html
+
+
+License
+=======
+
+Copyright (c) 2003 Armin Wolfermann.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+$Id: README,v 1.6 2003/04/27 14:01:46 armin Exp $

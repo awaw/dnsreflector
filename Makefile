@@ -1,12 +1,15 @@
+# $Id: Makefile,v 1.7 2003/05/01 13:12:56 armin Exp $
+
 PROG=dnsreflector
+SRCS=dnsreflector.c
 MAN=dnsreflector.1
 
 BINDIR=/usr/local/sbin
+MANDIR=/usr/local/man/cat
 
-CC=gcc
 CFLAGS+=-g -Wall -Werror
 
-VERS=1.01
+VERS=1.02
 LVERS="$(PROG) $(VERS) (`date +%Y-%b-%d`)"
 dist:
 	rm -rf /tmp/dnsreflector-$(VERS)/

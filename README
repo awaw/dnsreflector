@@ -1,4 +1,4 @@
-dnsreflector 1.01 (2003-Apr-27)
+dnsreflector 1.02 (2003-May-01)
 ===============================
 
 The dnsreflector daemon listens for DNS queries on a local UDP port and

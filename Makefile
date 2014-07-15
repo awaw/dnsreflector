@@ -1,25 +1,19 @@
-# $Id: Makefile,v 1.7 2003/05/01 13:12:56 armin Exp $
+# $Id: Makefile,v 1.9 2014/07/16 10:14:11 armin Exp $
 
 PROG=dnsreflector
-SRCS=dnsreflector.c
+SRCS=dnsreflector.c log.c
 MAN=dnsreflector.1
 
 BINDIR=/usr/local/sbin
 MANDIR=/usr/local/man/cat
 
-CFLAGS+=-g -Wall -Werror
+CFLAGS+=-g -Wall -Werror -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-qual -Wsign-compare
 
-VERS=1.02
-LVERS="$(PROG) $(VERS) (`date +%Y-%b-%d`)"
+VERS=1.03
+DISTDIR=$(PROG)-$(VERS)
 dist:
-	rm -rf /tmp/dnsreflector-$(VERS)/
-	mkdir /tmp/dnsreflector-$(VERS)/
-	cp -pR * /tmp/dnsreflector-$(VERS)/
-	cd /tmp/dnsreflector-$(VERS)/ && make cleandir
-	cd /tmp/dnsreflector-$(VERS)/ && rm -rf ./CVS/
-	(echo $(LVERS); cat README) >/tmp/dnsreflector-$(VERS)/README
-	cd /tmp && tar cf dnsreflector-$(VERS).tar ./dnsreflector-$(VERS)/
-	cd /tmp && gzip -f9 dnsreflector-$(VERS).tar
-	cd /tmp && rm -rf ./dnsreflector-$(VERS)/
+	-rm -f $(DISTDIR).tar $(DISTDIR).tar.gz
+	-tar -I MANIFEST -s '/^/$(DISTDIR)\//' -cvf $(DISTDIR).tar
+	-gzip -9 $(DISTDIR).tar
 
 .include <bsd.prog.mk>

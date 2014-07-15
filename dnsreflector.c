@@ -1,6 +1,6 @@
-/* $Id: dnsreflector.c,v 1.10 2003/04/27 13:22:13 armin Exp $ */
+/* $Id: dnsreflector.c,v 1.12 2014/07/16 10:14:11 armin Exp $ */
 /*
- * Copyright (c) 2003 Armin Wolfermann.  All rights reserved.
+ * Copyright (c) 2003-2014 Armin Wolfermann.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,20 +36,20 @@
 #include <err.h>
 #include <limits.h>
 #include <pwd.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
 #include <time.h>
 #include <unistd.h>
+#include "dnsreflector.h"
 
 /*
  * ;; ANSWER SECTION:
  * name.from.query.	86400	IN	A	127.0.0.1
  */
 
-#define ANSWER_A "\300\014\000\001\000\001\000\001\121\200\000\004\177\000\000\001"
+#define ANSWER_A "\300\014\000\001\000\001\000\001\121\200\000\004"
 
 /*
  * ;; ANSWER SECTION:
@@ -87,28 +87,6 @@
 
 #define MAXQUERY (PACKETSZ - sizeof(ADDITIONAL) - sizeof(AUTHORITY) - sizeof(ANSWER_AAAA))
 
-static struct syslog_data sdata = SYSLOG_DATA_INIT;
-
-static void
-logit(int level, const char *fmt, ...)
-{
-	va_list ap;
-	extern char *__progname;
-
-	va_start(ap, fmt);
-
-	if (sdata.opened) {
-		vsyslog_r(level, &sdata, fmt, ap);
-	} else {
-		fprintf(stderr, "%s: ", __progname);
-		vfprintf(stderr, fmt, ap);
-		if (strchr(fmt, '\n') == NULL)
-			fprintf(stderr, "\n");
-	}
-
-	va_end(ap);
-}
-
 static int
 dnstoa(char *pkt, char *string)
 {
@@ -140,19 +118,22 @@ main(int argc, char *argv[])
 	struct sockaddr_in raddr;
 	socklen_t socklen = sizeof(struct sockaddr_in);
 	struct passwd *pw;
-	int ch, s, n;
+	int ch, s;
+	unsigned int n;
 	char msg[PACKETSZ];
 	char name[MAXDNAME];
 	char *data;
 	u_short type;
+	in_addr_t answer_ip;
 
 	/* Options and their defaults */
 	char *address = NULL;
 	int daemonize = 0;
+	char *ip = NULL;
 	int port = 53000;
 
 	/* Process commandline arguments */
-	while ((ch = getopt(argc, argv, "a:dp:h")) != -1) {
+	while ((ch = getopt(argc, argv, "a:dhi:p:")) != -1) {
 		switch (ch) {
 		case 'a':
 			address = optarg;
@@ -160,16 +141,24 @@ main(int argc, char *argv[])
 		case 'd':
 			daemonize = 1;
 			break;
+		case 'i':
+			ip = optarg;
+			break;
 		case 'p':
 			port = strtol(optarg, NULL, 10);
 			break;
 		case 'h':
 		default:
 			fprintf(stderr,
-			    "Usage: %s -a address -d -p port\n", argv[0]);
+			    "Usage: %s -a address -d -i ip -p port\n", argv[0]);
 			exit(1);
 		}
 	}
+
+	/* Specify answer to be returned */
+	answer_ip = inet_addr(ip ? ip : "127.0.0.1");
+	if (answer_ip == INADDR_NONE)
+		fatal("Malformed IP '%s'", ip);
 
 	/* Prepare and bind our socket */
 	bzero((char *)&laddr, sizeof(struct sockaddr_in));
@@ -178,44 +167,39 @@ main(int argc, char *argv[])
 	laddr.sin_port = htons(port);
 
 	if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
-		err(1, "socket");
+		fatal("Cannot create socket: %s", strerror(errno));
 
 	if (bind(s, (struct sockaddr *)&laddr, socklen) == -1)
-		err(1, "bind");
+		fatal("Cannot bind socket: %s", strerror(errno));
 
 	/* Use syslog if daemonized */
 	if (daemonize) {
 		tzset();
-		openlog_r("dnsreflector", LOG_PID | LOG_NDELAY, LOG_DAEMON,
-		    &sdata);
+		log_syslog("dnsreflector");
 	}
 
 	/* Daemonize if requested */
 	if (daemonize && (daemon(0, 0) == -1))
-		err(1, "daemon");
+		fatal("Unable to daemonize: %s", strerror(errno));
 
 	/* Find less privileged user */
-	pw = getpwnam("_spamd");
+	pw = getpwnam("dnsrefle");
 	if (!pw)
 		pw = getpwnam("nobody");
+	if (!pw)
+		fatal("No unprivileged user found");
 
 	/* Chroot to /var/empty */
-	if (chroot("/var/empty") == -1 || chdir("/") == -1) {
-		logit(LOG_ERR, "cannot chroot to /var/empty");
-		exit(1);
-	}
+	if (chroot("/var/empty") == -1 || chdir("/") == -1)
+		fatal("Cannot chroot to /var/empty: %s", strerror(errno));
 
 	/* Drop privileges */
-	if (pw) {
-		if ((setgroups(1, &pw->pw_gid) == -1) ||
-		    (setegid(pw->pw_gid) == -1) ||
-		    (setgid(pw->pw_gid) == -1) ||
-		    (seteuid(pw->pw_uid) == -1) ||
-		    (setuid(pw->pw_uid) == -1)) {
-			logit(LOG_ERR, "cannot drop privileges");
-			exit(1);
-		}
-	}
+	if ((setgroups(1, &pw->pw_gid) == -1) ||
+	    (setegid(pw->pw_gid) == -1) ||
+	    (setgid(pw->pw_gid) == -1) ||
+	    (seteuid(pw->pw_uid) == -1) ||
+	    (setuid(pw->pw_uid) == -1))
+		fatal("Cannot drop privileges: %s", strerror(errno));
 
 	/* Main loop: receive queries and send answers */
 	for(;;) {
@@ -261,6 +245,8 @@ main(int argc, char *argv[])
 		switch (type) {
 		case T_A:
 			PUTSTRING(msg, n, ANSWER_A);
+			memcpy(&msg[n], &answer_ip, 4);
+			n += 4;
 			break;
 		case T_AAAA:
 			PUTSTRING(msg, n, ANSWER_AAAA);
@@ -285,12 +271,12 @@ main(int argc, char *argv[])
 		/* Send answer back to sender */
 		if (sendto(s, &msg, (size_t)n, 0, (struct sockaddr *)&raddr,
 			    socklen) == -1) {
-			logit(LOG_WARNING, "sendto");
+			warning("sendto");
 		}
 
 		/* Log this query */
 		dnstoa((char *)&msg[HFIXEDSZ], (char *)&name);
-		logit(LOG_INFO, "%s %s? %s", inet_ntoa(raddr.sin_addr),
+		info("%s %s? %s", inet_ntoa(raddr.sin_addr),
 			type == T_A ? "A" :
 			type == T_AAAA ? "AAAA" :
 			type == T_NS ? "NS" :

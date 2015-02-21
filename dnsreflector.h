@@ -1,4 +1,3 @@
-/* $Id: dnsreflector.h,v 1.1 2014/07/16 10:13:25 armin Exp $ */
 /*
  * Copyright (c) 2003,2004,2005,2006 Armin Wolfermann.  All rights reserved.
  *

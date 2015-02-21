@@ -1,5 +1,3 @@
-# $Id: Makefile,v 1.9 2014/07/16 10:14:11 armin Exp $
-
 PROG=dnsreflector
 SRCS=dnsreflector.c log.c
 MAN=dnsreflector.1

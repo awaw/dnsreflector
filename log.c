@@ -1,4 +1,3 @@
-/* $Id: log.c,v 1.1 2014/07/16 10:12:07 armin Exp $ */
 /*
  * Copyright (c) 2003,2004,2005 Armin Wolfermann
  *

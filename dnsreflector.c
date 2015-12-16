@@ -193,11 +193,9 @@ main(int argc, char *argv[])
 		fatal("Cannot chroot to /var/empty: %s", strerror(errno));
 
 	/* Drop privileges */
-	if ((setgroups(1, &pw->pw_gid) == -1) ||
-	    (setegid(pw->pw_gid) == -1) ||
-	    (setgid(pw->pw_gid) == -1) ||
-	    (seteuid(pw->pw_uid) == -1) ||
-	    (setuid(pw->pw_uid) == -1))
+	if (setgroups(1, &pw->pw_gid) ||
+	    setresgid(pw->pw_gid, pw->pw_gid, pw->pw_gid) ||
+	    setresuid(pw->pw_uid, pw->pw_uid, pw->pw_uid))
 		fatal("Cannot drop privileges: %s", strerror(errno));
 
 	/* Main loop: receive queries and send answers */

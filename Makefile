@@ -3,7 +3,7 @@ SRCS=dnsreflector.c log.c
 MAN=dnsreflector.1
 
 BINDIR=/usr/local/sbin
-MANDIR=/usr/local/man/cat
+MANDIR=/usr/local/man/man
 
 CFLAGS+=-g -Wall -Werror -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-qual -Wsign-compare
 
